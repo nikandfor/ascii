@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	stdflag "github.com/nikandfor/cli/stdflag"
 	"github.com/nikandfor/escape/color"
 	"golang.org/x/term"
+	stdflag "nikand.dev/go/cli/stdflag"
 )
 
 var (

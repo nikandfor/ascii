@@ -1,4 +1,4 @@
-module github.com/nikandfor/ascii
+module nikand.dev/go/ascii
 
 go 1.20
 

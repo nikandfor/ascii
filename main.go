@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	rows        = stdflag.Int("rows,r", 32, "number of rows (16, 32)")
+	cols        = stdflag.Int("cols,c", 4, "number of columns (4, 8)")
 	colorize    = stdflag.Bool("colorize,color,c", term.IsTerminal(int(os.Stdout.Fd())), "colorize")
 	showDecimal = stdflag.Bool("decimal", true, "show decimal code")
 	showHex     = stdflag.Bool("hex", true, "show hex code")
+	showAbbr    = stdflag.Bool("abbr", true, "show control chars names abbreveations")
 )
 
 func main() {
@@ -29,18 +30,21 @@ func main() {
 
 	var buf []byte
 
-	for c := 0; c < *rows; c++ {
-		for b := 0; b < 128; b += *rows {
-			if b != 0 {
+	rows := 128 / *cols
+	if *cols*rows < 128 {
+		rows++
+	}
+
+	for r := 0; r < rows; r++ {
+		for c := r; c < 128; c += rows {
+			if c != r {
 				buf = append(buf, "      "...)
 			}
-
-			r := b + c
 
 			buf = append(buf, gray...)
 
 			if *showDecimal {
-				buf = fmt.Appendf(buf, "%3d", r)
+				buf = fmt.Appendf(buf, "%3d", c)
 			}
 
 			if *showDecimal && *showHex {
@@ -48,7 +52,7 @@ func main() {
 			}
 
 			if *showHex {
-				buf = fmt.Appendf(buf, "%2x", r)
+				buf = fmt.Appendf(buf, "%2x", c)
 			}
 
 			buf = append(buf, reset...)
@@ -57,10 +61,23 @@ func main() {
 				buf = append(buf, "  "...)
 			}
 
-			if r < 32 || r >= 127 {
-				buf = fmt.Appendf(buf, "%-6q", r)
+			if c < 32 || c >= 127 {
+				buf = fmt.Appendf(buf, "%-6q", c)
 			} else {
-				buf = fmt.Appendf(buf, "%c", r)
+				buf = fmt.Appendf(buf, "%c", c)
+			}
+
+			switch {
+			case c < 32 && *showAbbr:
+				buf = append(buf, gray...)
+				buf = fmt.Appendf(buf, "  %-3s", names[c])
+				buf = append(buf, reset...)
+			case c == 0x7f && *showAbbr:
+				buf = append(buf, gray...)
+				buf = fmt.Appendf(buf, "  del")
+				buf = append(buf, reset...)
+			case c-c%rows < 32 && *showAbbr:
+				buf = fmt.Appendf(buf, "          ")
 			}
 		}
 
@@ -72,4 +89,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+var names = []string{
+	"nul", "soh", "stx", "etx",
+	"eot", "enq", "ack", "bel",
+	"bs", "ht", "lf", "vt",
+	"ff", "cr", "so", "si",
+	"dle", "dc1", "dc2", "dc3",
+	"dc4", "nak", "syn", "etb",
+	"can", "em", "sub", "esc",
+	"fs", "gs", "rs", "us",
 }
